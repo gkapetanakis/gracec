@@ -3,18 +3,18 @@
   open Lexing
   open Tokens
 
-  exception Syntax_error of string
+  exception Lexing_error of string
 
-  let raise_unexpected_character_error lexbuf unrecognized_char =
+  let raise_unexpected_character_error lexbuf bad_char =
     let line_num = lexbuf.Lexing.lex_curr_p.pos_lnum in
-    let escaped_char = Char.escaped unrecognized_char in
+    let escaped_char = Char.escaped bad_char in
     let error_msg = Printf.sprintf "Unexpected character at line %d: %s" line_num escaped_char in
-    raise (Syntax_error error_msg)
+    raise (Lexing_error error_msg)
 
   let raise_unclosed_comment_error lexbuf =
     let line_num = lexbuf.Lexing.lex_curr_p.pos_lnum in
     let error_msg = Printf.sprintf "Unclosed comment at line %d" line_num in
-    raise (Syntax_error error_msg)
+    raise (Lexing_error error_msg)
 
   let extract_char char_lit =
     if char_lit.[0] <> '\\' then
@@ -34,8 +34,8 @@
       | '\"' -> '\"'
       | _ -> assert false
 
-  let unescape_string string_lit =
-    let list = List.of_seq (String.to_seq string_lit) in
+  let unescape_string str_lit =
+    let list = List.of_seq (String.to_seq str_lit) in
     let rec aux = function
       | [], acc -> List.rev acc
       | '\\' :: 'n' :: rest, acc -> aux (rest, '\n' :: acc)
@@ -62,7 +62,7 @@
     | NOTHING -> "nothing"
     | CHAR_LIT c -> Printf.sprintf "char_lit (%c)" c
     | INT_LIT i -> Printf.sprintf "int_lit (%d)" i
-    | STRING_LIT s -> Printf.sprintf "string_lit (%s)" s
+    | STR_LIT s -> Printf.sprintf "str_lit (%s)" s
     | ID i -> Printf.sprintf "id (%s)" i
     | VAR -> "var"
     | FUN -> "fun"
@@ -102,96 +102,96 @@
 
 (* regular expression declarations *)
 let letter = ['a'-'z' 'A'-'Z']
-let digit = ['0'-'9']
-let hex_digit = ['0'-'9' 'a'-'f' 'A'-'F']
-let escape_sequence = '\\' (['n' 't' 'r' '0' '\\' '\'' '\"'] | ('x' hex_digit hex_digit))
+let decimal_digit = ['0'-'9']
+let hexadecimal_digit = ['0'-'9' 'a'-'f' 'A'-'F']
+let escape_sequence = '\\' (['n' 't' 'r' '0' '\\' '\'' '\"'] | ('x' hexadecimal_digit hexadecimal_digit))
 let whitespace = [' ' '\t']+
 let newline = '\r' | '\n' | "\r\n"
-let int_literal = digit+ as int_lit
-let char_literal = '\'' (([^ '\n' '\'' '\\'] | escape_sequence) as char_lit) '\''
-let string_literal = '\"' (([^ '\n' '\"' '\\'] | escape_sequence)+ as string_lit) '\"'
-let identifier = letter (letter | digit | '_')*
+let integer_literal = decimal_digit+ as int_lit
+let character_literal = '\'' (([^ '\n' '\'' '\\'] | escape_sequence) as char_lit) '\''
+let string_literal = '\"' (([^ '\n' '\"' '\\'] | escape_sequence)+ as str_lit) '\"'
+let identifier = letter (letter | decimal_digit | '_')*
 
 (* rule declarations *)
 rule token = parse
   (* whitespace and comments *)
-  | whitespace { token lexbuf (* ignore whitespace *) }
-  | newline { Lexing.new_line lexbuf; token lexbuf }
-  | '$' { single_line_comment lexbuf (* ignore the whole line *) }
-  | "$$" { multi_line_comment lexbuf (* ignore everything until next $$ *) }
+  | whitespace        { token lexbuf (* ignore whitespace *) }
+  | newline           { Lexing.new_line lexbuf; token lexbuf }
+  | '$'               { single_line_comment lexbuf (* ignore the whole line *) }
+  | "$$"              { multi_line_comment lexbuf (* ignore everything until next $$ *) }
 
   (* comparator operators *)
-  | '=' { EQUAL }
-  | '#' { NOT_EQUAL }
-  | '>' { GREATER }
-  | '<' { LESSER }
-  | ">=" { GREATER_EQUAL }
-  | "<=" { LESSER_EQUAL }
+  | '='               { EQUAL }
+  | '#'               { NOT_EQUAL }
+  | '>'               { GREATER }
+  | '<'               { LESSER }
+  | ">="              { GREATER_EQUAL }
+  | "<="              { LESSER_EQUAL }
 
   (* logical operators *)
-  | "and" { AND }
-  | "or" { OR }
-  | "not" { NOT }
+  | "and"             { AND }
+  | "or"              { OR }
+  | "not"             { NOT }
 
   (* arithmetic operators *)
-  | '+' { PLUS }
-  | '-' { MINUS }
-  | '*' { STAR }
-  | "div" { DIV }
-  | "mod" { MOD }
+  | '+'               { PLUS }
+  | '-'               { MINUS }
+  | '*'               { STAR }
+  | "div"             { DIV }
+  | "mod"             { MOD }
 
   (* structural symbols *)
-  | '(' { LPAREN }
-  | ')' { RPAREN }
-  | '[' { LBRACKET }
-  | ']' { RBRACKET }
-  | '{' { LBRACE }
-  | '}' { RBRACE }
-  | ',' { COMMA }
-  | ':' { COLON }
-  | ';' { SEMICOLON }
-  | "<-" { LARROW }
+  | '('               { LPAREN }
+  | ')'               { RPAREN }
+  | '['               { LBRACKET }
+  | ']'               { RBRACKET }
+  | '{'               { LBRACE }
+  | '}'               { RBRACE }
+  | ','               { COMMA }
+  | ':'               { COLON }
+  | ';'               { SEMICOLON }
+  | "<-"              { LARROW }
 
   (* statement keywords *)
-  | "var" { VAR }
-  | "fun" { FUN }
-  | "ref" { REF }
-  | "return" { RETURN }
-  | "if" { IF }
-  | "then" { THEN }
-  | "else" { ELSE }
-  | "while" { WHILE }
-  | "do" { DO }
+  | "var"             { VAR }
+  | "fun"             { FUN }
+  | "ref"             { REF }
+  | "return"          { RETURN }
+  | "if"              { IF }
+  | "then"            { THEN }
+  | "else"            { ELSE }
+  | "while"           { WHILE }
+  | "do"              { DO }
 
   (* reserved type names *)
-  | "char" { CHAR }
-  | "int" { INT }
-  | "nothing" { NOTHING }
+  | "char"            { CHAR }
+  | "int"             { INT }
+  | "nothing"         { NOTHING }
 
   (* literals *)
-  | int_literal { INT_LIT (int_of_string int_lit) }
-  | char_literal { CHAR_LIT (extract_char char_lit) }
-  | string_literal { STRING_LIT (unescape_string string_lit) }
+  | integer_literal   { INT_LIT (int_of_string int_lit) }
+  | character_literal { CHAR_LIT (extract_char char_lit) }
+  | string_literal    { STR_LIT (unescape_string str_lit) }
 
   (* varible identifiers *)
-  | identifier as id { ID (id) }
+  | identifier as id  { ID (id) }
 
   (* end of file *)
-  | eof { EOF }
+  | eof               { EOF }
 
   (* bad character *)
-  | _ as c { raise_unexpected_character_error lexbuf c }
+  | _ as c            { raise_unexpected_character_error lexbuf c }
 
 and single_line_comment = parse
-  | newline { Lexing.new_line lexbuf; token lexbuf }
-  | eof { EOF }
-  | _ { single_line_comment lexbuf }
+  | newline           { Lexing.new_line lexbuf; token lexbuf }
+  | eof               { EOF }
+  | _                 { single_line_comment lexbuf }
 
 and multi_line_comment = parse
-  | "$$" { token lexbuf }
-  | newline { Lexing.new_line lexbuf; multi_line_comment lexbuf }
-  | eof { raise_unclosed_comment_error lexbuf }
-  | _ { multi_line_comment lexbuf }
+  | "$$"              { token lexbuf }
+  | newline           { Lexing.new_line lexbuf; multi_line_comment lexbuf }
+  | eof               { raise_unclosed_comment_error lexbuf }
+  | _                 { multi_line_comment lexbuf }
 
 {
   (* trailer *)

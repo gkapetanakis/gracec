@@ -2,8 +2,8 @@
 (using menhir 2.1)
 
 (package
- (name grace)
- (synopsis "A simple compiler")
+ (name gracec)
+ (synopsis "A simple compiler for a programming language called Grace")
  (source
   (github username/reponame))
  (authors

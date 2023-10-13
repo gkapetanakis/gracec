@@ -5,7 +5,6 @@
 
 %start <program> program
 %type <func_def> func_def
-%type <header> header
 %type <fpar_def> fpar_def
 %type <data_type> data_type
 %type <var_type> var_type
@@ -41,14 +40,18 @@ let data_type :=
   | "char"; { Char }
 
 let var_type :=
-  | ~ = data_type; dims = list (delimited ("[", INT_LIT, "]")); { if List.length dims = 0 then VarDataType data_type else Array (data_type, dims) }
+  | ~ = data_type; dims = list (delimited ("[", INT_LIT, "]")); { if List.length dims = 0 
+                                                                    then VarDType data_type 
+                                                                    else Array (data_type, dims) }
 
 let ret_type :=
-  | ~ = data_type; { RetDataType data_type }
+  | ~ = data_type; { RetDType data_type }
   | "nothing"; { Nothing }
 
 let fpar_type :=
-  | ~ = data_type; first_dim = option (pair ("[", "]")); rest_dims = list (delimited ("[", INT_LIT, "]")); { Array (data_type, Option.is_some first_dim, rest_dims) }
+  | ~ = data_type; first_dim = option (pair ("[", "]")); rest_dims = list (delimited ("[", INT_LIT, "]")); { if Option.is_none first_dim || List.length rest_dims = 0
+                                                                                                               then FParDType data_type
+                                                                                                               else Array (data_type, Option.is_some first_dim, rest_dims) }
 
 let local_def :=
   | ~ = func_def; { FunctionDefinition func_def }
@@ -78,35 +81,35 @@ let func_call :=
   | id = ID; "("; params = separated_nonempty_list (",", expr); ")"; { { id; params } }
 
 let l_value :=
-  | id = ID; { Identifier id }
-  | string_lit = STRING_LIT; { String string_lit }
-  | ~ = l_value; "["; ~ = expr; "]"; { ArrayIndex (l_value, expr) }
+  | id = ID; { Ident id }
+  | string_lit = STRING_LIT; { Str string_lit }
+  | ~ = l_value; "["; ~ = expr; "]"; { ArrayIdx (l_value, expr) }
 
 let expr :=
-  | int_lit = INT_LIT; { IntLiteral int_lit }
-  | char_lit = CHAR_LIT; { CharLiteral char_lit }
+  | int_lit = INT_LIT; { IntLit int_lit }
+  | char_lit = CHAR_LIT; { CharLit char_lit }
   | ~ = l_value; { LValue l_value }
   | "("; ~ = expr; ")"; { expr }
   | ~ = func_call; { ExpressionFunctionCall func_call }
-  | "+"; ~ = expr; { UnaryArithmeticOperator (Positive, expr) }
-  | "-"; ~ = expr; { UnaryArithmeticOperator (Negative, expr) }
-  | lhs = expr; "+"; rhs = expr; { BinaryArithmeticOperator (lhs, Add, rhs) }
-  | lhs = expr; "-"; rhs = expr; { BinaryArithmeticOperator (lhs, Subtract, rhs) }
-  | lhs = expr; "*"; rhs = expr; { BinaryArithmeticOperator (lhs, Multiply, rhs) }
-  | lhs = expr; "div"; rhs = expr; { BinaryArithmeticOperator (lhs, Divide, rhs) }
-  | lhs = expr; "mod"; rhs = expr; { BinaryArithmeticOperator (lhs, Modulo, rhs) }
+  | "+"; ~ = expr; { UnaryArithmeticOp (Pos, expr) }
+  | "-"; ~ = expr; { UnaryArithmeticOp (Neg, expr) }
+  | lhs = expr; "+"; rhs = expr; { BinaryArithmeticOp (lhs, Add, rhs) }
+  | lhs = expr; "-"; rhs = expr; { BinaryArithmeticOp (lhs, Sub, rhs) }
+  | lhs = expr; "*"; rhs = expr; { BinaryArithmeticOp (lhs, Mul, rhs) }
+  | lhs = expr; "div"; rhs = expr; { BinaryArithmeticOp (lhs, Div, rhs) }
+  | lhs = expr; "mod"; rhs = expr; { BinaryArithmeticOp (lhs, Mod, rhs) }
 
 let cond :=
   | "("; ~ = cond; ")"; { cond }
-  | "not"; ~ = cond; { NotOperator cond }
-  | lhs = cond; "and"; rhs = cond; { BinaryLogicalOperator (lhs, And, rhs) }
-  | lhs = cond; "or"; rhs = cond; { BinaryLogicalOperator (lhs, Or, rhs) }
-  | lhs = expr; "="; rhs = expr; { ComparisonOperator (lhs, Equal, rhs) }
-  | lhs = expr; "#"; rhs = expr; { ComparisonOperator (lhs, NotEqual, rhs) }
-  | lhs = expr; ">"; rhs = expr; { ComparisonOperator (lhs, Greater, rhs) }
-  | lhs = expr; "<"; rhs = expr; { ComparisonOperator (lhs, Lesser, rhs) }
-  | lhs = expr; ">="; rhs = expr; { ComparisonOperator (lhs, GreaterEqual, rhs) }
-  | lhs = expr; "<="; rhs = expr; { ComparisonOperator (lhs, LesserEqual, rhs) }
+  | "not"; ~ = cond; { NotOp cond }
+  | lhs = cond; "and"; rhs = cond; { BinaryLogicalOp (lhs, And, rhs) }
+  | lhs = cond; "or"; rhs = cond; { BinaryLogicalOp (lhs, Or, rhs) }
+  | lhs = expr; "="; rhs = expr; { ComparisonOp (lhs, Eq, rhs) }
+  | lhs = expr; "#"; rhs = expr; { ComparisonOp (lhs, NEq, rhs) }
+  | lhs = expr; ">"; rhs = expr; { ComparisonOp (lhs, Great, rhs) }
+  | lhs = expr; "<"; rhs = expr; { ComparisonOp (lhs, Less, rhs) }
+  | lhs = expr; ">="; rhs = expr; { ComparisonOp (lhs, GreatEq, rhs) }
+  | lhs = expr; "<="; rhs = expr; { ComparisonOp (lhs, LessEq, rhs) }
 
 %%
 

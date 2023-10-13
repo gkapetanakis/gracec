@@ -9,14 +9,14 @@ let () =
     let rec tokenize_and_print () =
       try
         (* call the lexer's 'token' rule (tokenize input) *)
-        let token = Grace.Lexer.token lexbuf in
+        let token = Gracec_lib.Lexer.token lexbuf in
         (* print found tokens *)
         match token with
-        | Grace.Tokens.EOF -> ()
+        | Gracec_lib.Tokens.EOF -> ()
         | _ ->
-            Printf.printf "Token: %s\n" (Grace.Lexer.string_of_token token);
+            Printf.printf "Token: %s\n" (Gracec_lib.Lexer.string_of_token token);
             tokenize_and_print ()
-      with Grace.Lexer.Syntax_error msg -> print_endline msg
+      with Gracec_lib.Lexer.Lexing_error msg -> print_endline msg
     in
     tokenize_and_print ();
     print_endline ""

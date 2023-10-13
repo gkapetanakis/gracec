@@ -1,4 +1,4 @@
 (executable
- (public_name grace)
+ (public_name gracec)
  (name main)
- (libraries grace))
+ (libraries gracec_lib))
