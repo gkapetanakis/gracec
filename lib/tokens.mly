@@ -1,15 +1,15 @@
-(* reserved type names *)
-%token CHAR "char" 
-%token INT "int"
-%token NOTHING "nothing"
+(* varible identifiers *)
+%token <string> ID
 
 (* literals *)
 %token <char> CHAR_LIT
 %token <int> INT_LIT
 %token <string> STR_LIT
 
-(* varible identifiers *)
-%token <string> ID
+(* reserved type names *)
+%token CHAR "char" 
+%token INT "int"
+%token NOTHING "nothing"
 
 (* statement keywords *)
 %token VAR "var"
