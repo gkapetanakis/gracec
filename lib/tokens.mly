@@ -57,7 +57,9 @@
 (* end of file *)
 %token EOF "eof"
 
-%left "+" "-" "*" "div" "mod"
+%left "+" "-" "*"
+%left "div" "mod"
 %left "and" "or"
+%nonassoc "not"
 
 %%

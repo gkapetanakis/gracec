@@ -1,103 +1,104 @@
 {
   (* header *)
-  open Lexing
-  open Tokens
+open Lexing
+open Tokens
 
-  exception Lexing_error of string
+exception Lexing_error of string
 
-  let raise_unexpected_character_error lexbuf bad_char =
-    let line_num = lexbuf.Lexing.lex_curr_p.pos_lnum in
-    let escaped_char = Char.escaped bad_char in
-    let error_msg = Printf.sprintf "Unexpected character at line %d: %s" line_num escaped_char in
-    raise (Lexing_error error_msg)
+let raise_unexpected_character_error lexbuf bad_char =
+  let line_num = lexbuf.Lexing.lex_curr_p.pos_lnum in
+  let escaped_char = Char.escaped bad_char in
+  let error_msg =
+    Printf.sprintf "Unexpected character at line %d: %s" line_num escaped_char
+  in
+  raise (Lexing_error error_msg)
 
-  let raise_unclosed_comment_error lexbuf =
-    let line_num = lexbuf.Lexing.lex_curr_p.pos_lnum in
-    let error_msg = Printf.sprintf "Unclosed comment at line %d" line_num in
-    raise (Lexing_error error_msg)
+let raise_unclosed_comment_error lexbuf =
+  let line_num = lexbuf.Lexing.lex_curr_p.pos_lnum in
+  let error_msg = Printf.sprintf "Unclosed comment at line %d" line_num in
+  raise (Lexing_error error_msg)
 
-  let extract_char char_lit =
-    if char_lit.[0] <> '\\' then
-      (* char_lit is just a normal character *) 
-      char_lit.[0]
-    else
-      match char_lit.[1] with
-      (* char_lit is a hexadecimal number *)
-      | 'x' -> Char.chr (int_of_string ("0x" ^ String.sub char_lit 2 2))
-      (* char_lit is a non-numeric escaped character *)
-      | 'n' -> '\n'
-      | 't' -> '\t'
-      | 'r' -> '\r'
-      | '0' -> Char.chr 0
-      | '\\' -> '\\'
-      | '\'' -> '\''
-      | '\"' -> '\"'
-      | _ -> assert false
+let extract_char char_lit =
+  if char_lit.[0] <> '\\' then
+    (* char_lit is just a normal character *)
+    char_lit.[0]
+  else
+    match char_lit.[1] with
+    (* char_lit is a hexadecimal number *)
+    | 'x' -> Char.chr (int_of_string ("0x" ^ String.sub char_lit 2 2))
+    (* char_lit is a non-numeric escaped character *)
+    | 'n' -> '\n'
+    | 't' -> '\t'
+    | 'r' -> '\r'
+    | '0' -> Char.chr 0
+    | '\\' -> '\\'
+    | '\'' -> '\''
+    | '\"' -> '\"'
+    | _ -> assert false
 
-  let unescape_string str_lit =
-    let list = List.of_seq (String.to_seq str_lit) in
-    let rec aux = function
-      | [], acc -> List.rev acc
-      | '\\' :: 'n' :: rest, acc -> aux (rest, '\n' :: acc)
-      | '\\' :: 't' :: rest, acc -> aux (rest, '\t' :: acc)
-      | '\\' :: 'r' :: rest, acc -> aux (rest, '\r' :: acc)
-      | '\\' :: '0' :: rest, acc -> aux (rest, Char.chr 0 :: acc)
-      | '\\' :: '\\' :: rest, acc -> aux (rest, '\\' :: acc)
-      | '\\' :: '\'' :: rest, acc -> aux (rest, '\'' :: acc)
-      | '\\' :: '\"' :: rest, acc -> aux (rest, '\"' :: acc)
-      | '\\' :: 'x' :: hex1 :: hex2 :: rest, acc ->
-          aux
-            ( rest,
-              Char.chr
-                (int_of_string ("0x" ^ String.make 1 hex1 ^ String.make 1 hex2))
-              :: acc )
-      | head :: rest, acc -> aux (rest, head :: acc)
-    in
-    String.of_seq (List.to_seq (aux (list, [])))
+let unescape_string str_lit =
+  let list = List.of_seq (String.to_seq str_lit) in
+  let rec aux = function
+    | [], acc -> List.rev acc
+    | '\\' :: 'n' :: rest, acc -> aux (rest, '\n' :: acc)
+    | '\\' :: 't' :: rest, acc -> aux (rest, '\t' :: acc)
+    | '\\' :: 'r' :: rest, acc -> aux (rest, '\r' :: acc)
+    | '\\' :: '0' :: rest, acc -> aux (rest, Char.chr 0 :: acc)
+    | '\\' :: '\\' :: rest, acc -> aux (rest, '\\' :: acc)
+    | '\\' :: '\'' :: rest, acc -> aux (rest, '\'' :: acc)
+    | '\\' :: '\"' :: rest, acc -> aux (rest, '\"' :: acc)
+    | '\\' :: 'x' :: hex1 :: hex2 :: rest, acc ->
+        aux
+          ( rest,
+            Char.chr
+              (int_of_string ("0x" ^ String.make 1 hex1 ^ String.make 1 hex2))
+            :: acc )
+    | head :: rest, acc -> aux (rest, head :: acc)
+  in
+  String.of_seq (List.to_seq (aux (list, [])))
 
-  let string_of_token token =
-    match token with
-    | CHAR -> "char"
-    | INT -> "int"
-    | NOTHING -> "nothing"
-    | CHAR_LIT c -> Printf.sprintf "char_lit (%c)" c
-    | INT_LIT i -> Printf.sprintf "int_lit (%d)" i
-    | STR_LIT s -> Printf.sprintf "str_lit (%s)" s
-    | ID i -> Printf.sprintf "id (%s)" i
-    | VAR -> "var"
-    | FUN -> "fun"
-    | REF -> "ref"
-    | RETURN -> "return"
-    | IF -> "if"
-    | THEN -> "then"
-    | ELSE -> "else"
-    | WHILE -> "while"
-    | DO -> "do"
-    | EQUAL -> "equal"
-    | NOT_EQUAL -> "not_equal"
-    | GREATER -> "greater"
-    | LESSER -> "lesser"
-    | GREATER_EQUAL -> "greater_equal"
-    | LESSER_EQUAL -> "lesser_equal"
-    | AND -> "and"
-    | OR -> "or"
-    | NOT -> "not"
-    | PLUS -> "plus"
-    | MINUS -> "minus"
-    | STAR -> "star"
-    | DIV -> "div"
-    | MOD -> "mod"
-    | LPAREN -> "lparen"
-    | RPAREN -> "rparen"
-    | LBRACKET -> "lbracket"
-    | RBRACKET -> "rbracket"
-    | LBRACE -> "lbrace"
-    | RBRACE -> "rbrace"
-    | COMMA -> "comma"
-    | COLON -> "colon"
-    | SEMICOLON -> "semicolon"
-    | LARROW -> "larrow"
-    | EOF -> "eof"
+let string_of_token = function
+  | CHAR -> "char"
+  | INT -> "int"
+  | NOTHING -> "nothing"
+  | CHAR_LIT c -> Printf.sprintf "char_lit (%c)" c
+  | INT_LIT i -> Printf.sprintf "int_lit (%d)" i
+  | STR_LIT s -> Printf.sprintf "str_lit (%s)" s
+  | ID i -> Printf.sprintf "id (%s)" i
+  | VAR -> "var"
+  | FUN -> "fun"
+  | REF -> "ref"
+  | RETURN -> "return"
+  | IF -> "if"
+  | THEN -> "then"
+  | ELSE -> "else"
+  | WHILE -> "while"
+  | DO -> "do"
+  | EQUAL -> "equal"
+  | NOT_EQUAL -> "not_equal"
+  | GREATER -> "greater"
+  | LESSER -> "lesser"
+  | GREATER_EQUAL -> "greater_equal"
+  | LESSER_EQUAL -> "lesser_equal"
+  | AND -> "and"
+  | OR -> "or"
+  | NOT -> "not"
+  | PLUS -> "plus"
+  | MINUS -> "minus"
+  | STAR -> "star"
+  | DIV -> "div"
+  | MOD -> "mod"
+  | LPAREN -> "lparen"
+  | RPAREN -> "rparen"
+  | LBRACKET -> "lbracket"
+  | RBRACKET -> "rbracket"
+  | LBRACE -> "lbrace"
+  | RBRACE -> "rbrace"
+  | COMMA -> "comma"
+  | COLON -> "colon"
+  | SEMICOLON -> "semicolon"
+  | LARROW -> "larrow"
+  | EOF -> "eof"
 }
 
 (* regular expression declarations *)
