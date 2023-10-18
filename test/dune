@@ -1,3 +1,5 @@
-(test
- (name lexer)
+(tests
+ (names lexer parser)
+ (deps
+  (source_tree ./programs))
  (libraries gracec_lib))

@@ -1,0 +1,34 @@
+fun
+id (main)
+lparen
+rparen
+colon
+nothing
+var
+id (a)
+colon
+int
+semicolon
+var
+id (b)
+colon
+char
+semicolon
+var
+id (c)
+colon
+int
+lbracket
+int_lit (5)
+rbracket
+semicolon
+var
+id (d)
+colon
+char
+lbracket
+int_lit (10)
+rbracket
+semicolon
+lbrace
+rbrace

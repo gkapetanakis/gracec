@@ -1,0 +1,25 @@
+MainFunc:
+  Header:
+    Name: main
+    Params: none
+    RetType: nothing
+  LocalDefs:
+    VarDef:
+      Name: a
+      Type: int
+    VarDef:
+      Name: b
+      Type: char
+    VarDef:
+      Name: c
+      Type:
+        Array:
+          Size: 5
+          Of: int
+    VarDef:
+      Name: d
+      Type:
+        Array:
+          Size: 10
+          Of: char
+  Block: empty
